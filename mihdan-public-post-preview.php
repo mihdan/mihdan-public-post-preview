@@ -2,12 +2,12 @@
 /**
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
- * Plugin URI:  https://github.com/mihdan/mihdan-elementor-2gis-maps
- * Version:     1.0
+ * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
+ * Version:     1.1
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
- * Text Domain: mihdan-elementor-2gis-maps
- * GitHub Plugin URI: https://github.com/mihdan/mihdan-elementor-2gis-maps
+ * Text Domain: mihdan-public-post-preview
+ * GitHub Plugin URI: https://github.com/mihdan/mihdan-public-post-preview/
  */
 
 /**
@@ -26,7 +26,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.0';
+	const VERSION     = '1.1';
 
 	/**
 	 * Instance
