@@ -182,6 +182,11 @@ class Core {
 	public function add_metabox() {
 		global $post;
 
+		// Рисуем метабокс только для черновика
+		if ( ! in_array( $post->post_status, $this->post_status, true ) ) {
+			return;
+		}
+
 		// Включен ли предпросмотр для поста.
 		$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
 		?>
