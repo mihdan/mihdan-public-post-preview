@@ -41,6 +41,16 @@ class Core {
 	private static $_instance = null;
 
 	/**
+	 * @var array $post_type массив типов поста
+	 */
+	private $post_type;
+
+	/**
+	 * @var array $post_status массив статусов поста
+	 */
+	private $post_status;
+
+	/**
 	 * Instance
 	 *
 	 * Ensures only one instance of the class is loaded or can be loaded.
@@ -69,9 +79,18 @@ class Core {
 	 * @access public
 	 */
 	public function __construct() {
+		$this->setup();
 		$this->init();
 	}
 
+	public function setup() {
+		$this->post_status = apply_filters( 'mihdan_public_post_preview_post_status', array( 'draft' ) );
+		$this->post_type   = apply_filters( 'mihdan_public_post_preview_post_type', array( 'post' ) );
+	}
+
+	/**
+	 * Инициализация
+	 */
 	public function init() {
 		add_action( 'post_submitbox_misc_actions', array( $this, 'add_metabox' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
@@ -79,15 +98,36 @@ class Core {
 		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
 	}
 
+	/**
+	 * Получить красивую ссылку на пост
+	 *
+	 * @param int $post_id идентификатор записи
+	 *
+	 * @return string
+	 */
 	public function get_permalink( $post_id ) {
-		require_once ABSPATH . '/wp-admin/includes/post.php';
-		list( $permalink, $postname ) = get_sample_permalink( $post_id );
 
-		return str_replace( '%postname%', $postname, $permalink );
+		// Получим статус переданного поста.
+		$post_status = get_post_status( $post_id );
+
+		// Коцаем только ссылки в черновиках.
+		if ( in_array( $post_status, $this->post_status, true ) ) {
+
+			require_once ABSPATH . '/wp-admin/includes/post.php';
+			list( $permalink, $postname ) = get_sample_permalink( $post_id );
+
+			return str_replace( '%postname%', $postname, $permalink );
+		} else {
+			return get_permalink( $post_id );
+		}
 	}
 
 	/**
-	 * @param           $posts
+	 * Создаем фейковое свойство для `$wp_query->_draft_posts`
+	 * и передаем туда пост-черновик, у которого
+	 * в базе проставлена соответствующая галочка
+	 *
+	 * @param array     $posts массив записей
 	 * @param \WP_Query $wp_query
 	 *
 	 * @return mixed
@@ -98,7 +138,7 @@ class Core {
 
 			$post = $posts[0];
 
-			if ( in_array( $post->post_status, apply_filters( 'mihdan_public_post_preview_post_statuses', array( 'draft' ) ) ) ) {
+			if ( in_array( $post->post_status, $this->post_status, true ) ) {
 
 				// Включен ли предпросмотр для поста.
 				$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
@@ -113,17 +153,32 @@ class Core {
 		return $posts;
 	}
 
+	/**
+	 * Вместо стандартного свойства `$wp_query->posts`
+	 * подсовываем наше фейковое `$wp_query->_draft_posts`
+	 *
+	 * @param array     $posts
+	 * @param \WP_Query $wp_query
+	 *
+	 * @return mixed
+	 */
 	public function show_draft_post( $posts, \WP_Query $wp_query ) {
 		remove_filter( 'the_posts', array( $this, 'show_draft_post' ), 10 );
 
 		return $wp_query->_draft_posts;
 	}
 
+	/**
+	 * Подклюаем стили и скрипты в админку
+	 */
 	public function enqueue_script() {
 		wp_enqueue_script( self::PLUGIN_NAME, plugins_url( 'assets/js/app.js', __FILE__ ), array( 'jquery' ), self::VERSION, true );
 		wp_enqueue_style( self::PLUGIN_NAME, plugins_url( 'assets/css/app.css', __FILE__ ), array(), self::VERSION );
 	}
 
+	/**
+	 * Добавляем чекбокс в метабокс с выбором статуса поста
+	 */
 	public function add_metabox() {
 		global $post;
 
@@ -142,12 +197,13 @@ class Core {
 	}
 
 	/**
-	 * Включает/Выключат превью для записи
+	 * Включаем/Выключаем превью для записи
 	 */
 	public function mppp_toggle() {
 		$value   = ( 'true' === $_REQUEST['value'] ) ? 1 : 0;
 		$post_id = absint( $_REQUEST['post_id'] );
 
+		// Обновляем мету с галочкой
 		update_post_meta( $post_id, self::META_NAME, $value );
 
 		$result = array(
