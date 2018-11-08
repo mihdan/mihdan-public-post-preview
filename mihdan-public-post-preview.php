@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.1
+ * Version:     1.2
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -26,7 +26,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.1';
+	const VERSION     = '1.2';
 
 	/**
 	 * Instance
@@ -95,7 +95,21 @@ class Core {
 		add_action( 'post_submitbox_misc_actions', array( $this, 'add_metabox' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
 		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
+		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
 		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
+	}
+
+	/**
+	 * Удалить галочку из базы при публикации поста
+	 *
+	 * @param string   $new_status старый статус
+	 * @param string   $old_status новый статус
+	 * @param \WP_Post $post объект поста
+	 */
+	public function remove_preview( $new_status, $old_status, \WP_Post $post ) {
+		if ( 'publish' === $new_status ) {
+			delete_post_meta( $post->ID, self::META_NAME );
+		}
 	}
 
 	/**
@@ -210,8 +224,13 @@ class Core {
 		$post_id = absint( $_REQUEST['post_id'] );
 
 		// Обновляем мету с галочкой
-		update_post_meta( $post_id, self::META_NAME, $value );
+		if ( 1 === $value ) {
+			update_post_meta( $post_id, self::META_NAME, $value );
+		} else {
+			delete_post_meta( $post_id, self::META_NAME );
+		}
 
+		// Формируем ответ для JS
 		$result = array(
 			'value' => $value,
 			'link'  => $this->get_permalink( $post_id ),
