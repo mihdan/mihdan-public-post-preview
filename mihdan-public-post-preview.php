@@ -1,0 +1,164 @@
+<?php
+/**
+ * Plugin Name: Mihdan: Public Post Preview
+ * Description: Публичная ссылка на пост до его публикации
+ * Plugin URI:  https://github.com/mihdan/mihdan-elementor-2gis-maps
+ * Version:     1.0
+ * Author:      Mikhail Kobzarev
+ * Author URI:  https://www.kobzarev.com/
+ * Text Domain: mihdan-elementor-2gis-maps
+ * GitHub Plugin URI: https://github.com/mihdan/mihdan-elementor-2gis-maps
+ */
+
+/**
+ * @link https://poltavcev.biz/2018/10/31/kak-pokazat-ne-opublikovannuyu-zapis-na-wordpress/?tg_rhash=731cd3d47acb43%D0%9A%D0%B0%D0%BA
+ * @link https://wordpress.stackexchange.com/questions/218168/how-to-make-draft-posts-or-posts-in-review-accessible-via-full-url-slug
+ * @link https://wordpress.stackexchange.com/questions/41588/how-to-get-the-clean-permalink-in-a-draft
+ */
+
+namespace Mihdan_Public_Post_Preview;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class Core {
+
+	const PLUGIN_NAME = 'mppp';
+	const META_NAME   = 'mppp';
+	const VERSION     = '1.0';
+
+	/**
+	 * Instance
+	 *
+	 * @since 1.0
+	 *
+	 * @access private
+	 * @static
+	 *
+	 * @var Core The single instance of the class.
+	 */
+	private static $_instance = null;
+
+	/**
+	 * Instance
+	 *
+	 * Ensures only one instance of the class is loaded or can be loaded.
+	 *
+	 * @since 1.0
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @return Core An instance of the class.
+	 */
+	public static function get_instance() {
+
+		if ( is_null( self::$_instance ) ) {
+			self::$_instance = new self();
+		}
+		return self::$_instance;
+
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @since 1.0
+	 *
+	 * @access public
+	 */
+	public function __construct() {
+		$this->init();
+	}
+
+	public function init() {
+		add_action( 'post_submitbox_misc_actions', array( $this, 'add_metabox' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
+		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
+		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
+	}
+
+	public function get_permalink( $post_id ) {
+		require_once ABSPATH . '/wp-admin/includes/post.php';
+		list( $permalink, $postname ) = get_sample_permalink( $post_id );
+
+		return str_replace( '%postname%', $postname, $permalink );
+	}
+
+	/**
+	 * @param           $posts
+	 * @param \WP_Query $wp_query
+	 *
+	 * @return mixed
+	 */
+	public function posts_results( $posts, \WP_Query $wp_query ) {
+
+		if ( $wp_query->is_single() ) {
+
+			$post = $posts[0];
+
+			if ( in_array( $post->post_status, apply_filters( 'mihdan_public_post_preview_post_statuses', array( 'draft' ) ) ) ) {
+
+				// Включен ли предпросмотр для поста.
+				$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
+
+				if ( 1 === $is_preview_enabled ) {
+					$wp_query->_draft_posts = $posts;
+
+					add_filter( 'the_posts', array( $this, 'show_draft_post' ), 10, 2 );
+				}
+			}
+		}
+		return $posts;
+	}
+
+	public function show_draft_post( $posts, \WP_Query $wp_query ) {
+		remove_filter( 'the_posts', array( $this, 'show_draft_post' ), 10 );
+
+		return $wp_query->_draft_posts;
+	}
+
+	public function enqueue_script() {
+		wp_enqueue_script( self::PLUGIN_NAME, plugins_url( 'assets/js/app.js', __FILE__ ), array( 'jquery' ), self::VERSION, true );
+		wp_enqueue_style( self::PLUGIN_NAME, plugins_url( 'assets/css/app.css', __FILE__ ), array(), self::VERSION );
+	}
+
+	public function add_metabox() {
+		global $post;
+
+		// Включен ли предпросмотр для поста.
+		$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
+		?>
+		<div class="misc-pub-section">
+			<label><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', get_post_meta( $post->ID, self::META_NAME, true ) ); ?> /> <strong>Включить превью</strong></label>
+			<div id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link">
+				<?php if ( 1 === $is_preview_enabled ) : ?>
+					<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Включает/Выключат превью для записи
+	 */
+	public function mppp_toggle() {
+		$value   = ( 'true' === $_REQUEST['value'] ) ? 1 : 0;
+		$post_id = absint( $_REQUEST['post_id'] );
+
+		update_post_meta( $post_id, self::META_NAME, $value );
+
+		$result = array(
+			'value' => $value,
+			'link'  => $this->get_permalink( $post_id ),
+		);
+
+		wp_send_json_success( $result );
+	}
+}
+
+Core::get_instance();
+
+// eof;

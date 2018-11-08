@@ -1,0 +1,9 @@
+#mppp_link {
+	border: 1px solid #ddd;
+	padding: 5px;
+	margin: 10px 0;
+	white-space: nowrap;
+	overflow: hidden;
+	color: #0073aa;
+	background-color: #f5f5f5;
+}
