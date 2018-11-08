@@ -134,11 +134,12 @@ class Core {
 	 */
 	public function posts_results( $posts, \WP_Query $wp_query ) {
 
+		// Работаем, если это тип поста - запись
 		if ( $wp_query->is_single() ) {
 
 			$post = $posts[0];
 
-			if ( in_array( $post->post_status, $this->post_status, true ) ) {
+			if ( in_array( $post->post_type, $this->post_type, true ) && in_array( $post->post_status, $this->post_status, true ) ) {
 
 				// Включен ли предпросмотр для поста.
 				$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
