@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.3
+ * Version:     1.4
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -26,7 +26,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.3';
+	const VERSION     = '1.4';
 
 	/**
 	 * Instance
@@ -246,6 +246,15 @@ class Core {
 	}
 }
 
-Core::get_instance();
+/**
+ * Хелпре для инициализации плагина
+ *
+ * @return Core
+ */
+function mihdan_public_post_preview() {
+	return Core::get_instance();
+}
+
+add_action( 'after_setup_theme', 'Mihdan_Public_Post_Preview\mihdan_public_post_preview' );
 
 // eof;
