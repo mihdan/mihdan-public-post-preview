@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.2
+ * Version:     1.3
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -26,7 +26,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.2';
+	const VERSION     = '1.3';
 
 	/**
 	 * Instance
@@ -149,7 +149,7 @@ class Core {
 	public function posts_results( $posts, \WP_Query $wp_query ) {
 
 		// Работаем, если это тип поста - запись
-		if ( $wp_query->is_single() ) {
+		if ( ! $wp_query->is_admin && $wp_query->is_single() ) {
 
 			$post = $posts[0];
 
@@ -165,6 +165,7 @@ class Core {
 				}
 			}
 		}
+
 		return $posts;
 	}
 
@@ -204,13 +205,18 @@ class Core {
 
 		// Включен ли предпросмотр для поста.
 		$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
+
+		// Классы для блока со ссылкой.
+		$class = '';
+
+		if ( 1 !== $is_preview_enabled ) {
+			$class = 'hidden';
+		}
 		?>
 		<div class="misc-pub-section">
-			<label><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', get_post_meta( $post->ID, self::META_NAME, true ) ); ?> /> <strong>Включить превью</strong></label>
-			<div id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link">
-				<?php if ( 1 === $is_preview_enabled ) : ?>
-					<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>
-				<?php endif; ?>
+			<label title="Включить/выключить публичную сылку"><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', get_post_meta( $post->ID, self::META_NAME, true ) ); ?> /> <span>Публичная ссылка</span></label>
+			<div id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>">
+				<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>
 			</div>
 		</div>
 		<?php

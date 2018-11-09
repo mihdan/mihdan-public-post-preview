@@ -15,11 +15,13 @@
 			success: function ( response ) {
 
 				if ( 1 === response.value ) {
-					$link.text( response.link ).show();
+					$link.text( response.link ).removeClass( 'hidden' );
 				} else {
-					$link.empty().hide();
+					$link.empty().addClass( 'hidden' );
 				}
 			}
 		} );
 	} );
 } )( window.jQuery );
+
+// eof;
