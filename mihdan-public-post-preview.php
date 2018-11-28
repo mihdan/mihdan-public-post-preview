@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.7
+ * Version:     1.8
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.7';
+	const VERSION     = '1.8';
 
 	/**
 	 * Instance
@@ -99,6 +99,23 @@ class Core {
 		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
 		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
 		add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 10, 2 );
+		add_filter( 'display_post_states', array( $this, 'draft_preview_post_states_mark' ), 10, 2 );
+	}
+
+	/**
+	 * Добавляем метку к посту в списке записей, что для него активно превью
+	 *
+	 * @param array    $states массив статусов.
+	 * @param \WP_Post $post объект поста.
+	 *
+	 * @return array
+	 */
+	public function draft_preview_post_states_mark( $states, \WP_Post $post ) {
+		if ( $this->is_post_previewable( $post ) ) {
+			$states[] = 'Публичное превью';
+		}
+
+		return $states;
 	}
 
 	/**
