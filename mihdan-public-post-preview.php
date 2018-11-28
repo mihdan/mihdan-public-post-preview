@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.6
+ * Version:     1.7
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.6';
+	const VERSION     = '1.7';
 
 	/**
 	 * Instance
@@ -101,6 +101,14 @@ class Core {
 		add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 10, 2 );
 	}
 
+	/**
+	 * Генерим красивую ссылку у записи в списке постов в админке.
+	 *
+	 * @param string   $preview_link дефолтная ссылка.
+	 * @param \WP_Post $post
+	 *
+	 * @return string
+	 */
 	public function preview_post_link( $preview_link, \WP_Post $post ) {
 		if ( $this->is_post_previewable( $post ) ) {
 			return $this->get_permalink( $post->ID );
@@ -163,24 +171,6 @@ class Core {
 	 */
 	public function posts_results( $posts, \WP_Query $wp_query ) {
 
-		// Работаем, если это тип поста - запись
-		/*if ( ! $wp_query->is_admin && $wp_query->is_single() && count( $posts ) ) {
-
-			$post = $posts[0];
-
-			if ( in_array( $post->post_type, $this->post_type, true ) && in_array( $post->post_status, $this->post_status, true ) ) {
-
-				// Включен ли предпросмотр для поста.
-				$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
-
-				if ( 1 === $is_preview_enabled ) {
-					$wp_query->_draft_posts = $posts;
-
-					add_filter( 'the_posts', array( $this, 'show_draft_post' ), 10, 2 );
-				}
-			}
-		}*/
-
 		if ( ! $wp_query->is_admin && $wp_query->is_main_query() && $wp_query->is_single() && 1 === count( $posts ) ) {
 
 			/** @var \WP_Post $post */
@@ -202,37 +192,7 @@ class Core {
 			}
 		}
 
-
-//		if (
-//			AND $post->post_status === 'draft'
-//			                                                    AND is_post_previewable( $post )
-//
-//		){
-//			$wp_query->is_preview = true;   // чтобы работала is_preview()
-//			$post->post_status = 'publish'; // чтобы пройти проверки
-//
-//			// вернем draft обратно (необязательно, на всякий)
-//			add_action( 'wp', function() use ( $post ){
-//				$post->post_status = 'draft';
-//			});
-//		}
-
 		return $posts;
-	}
-
-	/**
-	 * Вместо стандартного свойства `$wp_query->posts`
-	 * подсовываем наше фейковое `$wp_query->_draft_posts`
-	 *
-	 * @param array     $posts
-	 * @param \WP_Query $wp_query
-	 *
-	 * @return mixed
-	 */
-	public function show_draft_post( $posts, \WP_Query $wp_query ) {
-		remove_filter( 'the_posts', array( $this, 'show_draft_post' ), 10 );
-
-		return $wp_query->_draft_posts;
 	}
 
 	/**
@@ -277,11 +237,31 @@ class Core {
 	public function mppp_toggle() {
 		$value   = ( 'true' === $_REQUEST['value'] ) ? 1 : 0;
 		$post_id = absint( $_REQUEST['post_id'] );
+		$post    = get_post( $post_id );
 
 		// Обновляем мету с галочкой
 		if ( 1 === $value ) {
-			update_post_meta( $post_id, self::META_NAME, $value );
+			// Важно для работы запроса предпросмотра задать post_name
+			$args = array(
+				'ID'         => $post->ID,
+				'post_title' => $post->post_title,
+				'post_name'  => sanitize_title( $post->post_title ),
+				'meta_input' => [ self::META_NAME => $value ],
+			);
+
+			// Обновим пост
+			wp_update_post( wp_slash( $args ) );
+
 		} else {
+			// Удалим post_name у записи. Важно!!!
+			$args = array(
+				'ID'        => $post->ID,
+				'post_name' => '',
+			);
+
+			wp_update_post( $args );
+
+			// Удалим мету
 			delete_post_meta( $post_id, self::META_NAME );
 		}
 
