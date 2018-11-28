@@ -149,7 +149,7 @@ class Core {
 	public function posts_results( $posts, \WP_Query $wp_query ) {
 
 		// Работаем, если это тип поста - запись
-		if ( ! $wp_query->is_admin && $wp_query->is_single() ) {
+		if ( ! $wp_query->is_admin && $wp_query->is_single() && count( $posts ) ) {
 
 			$post = $posts[0];
 
@@ -215,9 +215,7 @@ class Core {
 		?>
 		<div class="misc-pub-section">
 			<label title="Включить/выключить публичную сылку"><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', get_post_meta( $post->ID, self::META_NAME, true ) ); ?> /> <span>Публичная ссылка</span></label>
-			<div id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>">
-				<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>
-			</div>
+			<input type="text" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>" value="<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>" >
 		</div>
 		<?php
 	}
