@@ -214,13 +214,11 @@ class Core {
 			return;
 		}
 
-		// Включен ли предпросмотр для поста.
-		$is_preview_enabled = (int) get_post_meta( $post->ID, self::META_NAME, true );
-
 		// Классы для блока со ссылкой.
 		$class = '';
 
-		if ( 1 !== $is_preview_enabled ) {
+		// Включен ли предпросмотр для поста.
+		if ( 1 !== $this->is_post_previewable( $post ) ) {
 			$class = 'hidden';
 		}
 		?>
