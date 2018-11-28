@@ -265,9 +265,6 @@ class Core {
 			delete_post_meta( $post_id, self::META_NAME );
 		}
 
-		// Очистить кеш поста
-		clean_post_cache( $post_id );
-
 		// Формируем ответ для JS
 		$result = array(
 			'value' => $value,
