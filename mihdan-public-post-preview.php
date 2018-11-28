@@ -218,7 +218,7 @@ class Core {
 		$class = '';
 
 		// Включен ли предпросмотр для поста.
-		if ( 1 !== $this->is_post_previewable( $post ) ) {
+		if ( ! $this->is_post_previewable( $post ) ) {
 			$class = 'hidden';
 		}
 		?>
