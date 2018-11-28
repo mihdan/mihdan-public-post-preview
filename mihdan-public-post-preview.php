@@ -3,11 +3,12 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.5
+ * Version:     1.6
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
  * GitHub Plugin URI: https://github.com/mihdan/mihdan-public-post-preview/
+ * Contributors: mihdan, kama
  */
 
 /**
@@ -26,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.5';
+	const VERSION     = '1.6';
 
 	/**
 	 * Instance
@@ -97,6 +98,15 @@ class Core {
 		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
 		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
 		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
+		add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 10, 2 );
+	}
+
+	public function preview_post_link( $preview_link, \WP_Post $post ) {
+		if ( $this->is_post_previewable( $post ) ) {
+			return $this->get_permalink( $post->ID );
+		}
+
+		return $preview_link;
 	}
 
 	/**
@@ -113,6 +123,17 @@ class Core {
 	}
 
 	/**
+	 * Превьюбельный ли пост ))))
+	 *
+	 * @param \WP_Post $post объект поста
+	 *
+	 * @return boolean
+	 */
+	public function is_post_previewable( \WP_Post $post ) {
+		return get_post_meta( $post->ID, self::META_NAME, true );
+	}
+
+	/**
 	 * Получить красивую ссылку на пост
 	 *
 	 * @param int $post_id идентификатор записи
@@ -121,19 +142,13 @@ class Core {
 	 */
 	public function get_permalink( $post_id ) {
 
-		// Получим статус переданного поста.
-		$post_status = get_post_status( $post_id );
-
-		// Коцаем только ссылки в черновиках.
-		if ( in_array( $post_status, $this->post_status, true ) ) {
-
+		if ( ! function_exists( 'get_sample_permalink' ) ) {
 			require_once ABSPATH . '/wp-admin/includes/post.php';
-			list( $permalink, $postname ) = get_sample_permalink( $post_id );
-
-			return str_replace( '%postname%', $postname, $permalink );
-		} else {
-			return get_permalink( $post_id );
 		}
+
+		list( $permalink, $postname ) = get_sample_permalink( $post_id );
+
+		return str_replace( array( '%pagename%', '%postname%' ), $postname, $permalink );
 	}
 
 	/**
@@ -149,7 +164,7 @@ class Core {
 	public function posts_results( $posts, \WP_Query $wp_query ) {
 
 		// Работаем, если это тип поста - запись
-		if ( ! $wp_query->is_admin && $wp_query->is_single() && count( $posts ) ) {
+		/*if ( ! $wp_query->is_admin && $wp_query->is_single() && count( $posts ) ) {
 
 			$post = $posts[0];
 
@@ -164,7 +179,43 @@ class Core {
 					add_filter( 'the_posts', array( $this, 'show_draft_post' ), 10, 2 );
 				}
 			}
+		}*/
+
+		if ( ! $wp_query->is_admin && $wp_query->is_main_query() && $wp_query->is_single() && 1 === count( $posts ) ) {
+
+			/** @var \WP_Post $post */
+			$post = & $posts[0];
+
+			if ( in_array( $post->post_type, $this->post_type, true ) && in_array( $post->post_status, $this->post_status, true ) && $this->is_post_previewable( $post ) ) {
+				// Запомним статус
+				$old_status = $post->post_status;
+
+				// Чтобы работало is_preview
+				$wp_query->is_preview = true;
+
+				// Чтобы пройти проверки
+				$post->post_status = 'publish';
+
+				add_action( 'wp', function() use ( $post, $old_status ) {
+					$post->post_status = $old_status;
+				} );
+			}
 		}
+
+
+//		if (
+//			AND $post->post_status === 'draft'
+//			                                                    AND is_post_previewable( $post )
+//
+//		){
+//			$wp_query->is_preview = true;   // чтобы работала is_preview()
+//			$post->post_status = 'publish'; // чтобы пройти проверки
+//
+//			// вернем draft обратно (необязательно, на всякий)
+//			add_action( 'wp', function() use ( $post ){
+//				$post->post_status = 'draft';
+//			});
+//		}
 
 		return $posts;
 	}
