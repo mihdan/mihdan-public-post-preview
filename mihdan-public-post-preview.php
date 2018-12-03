@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9
+ * Version:     1.9.1
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -29,7 +29,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.9';
+	const VERSION     = '1.9.1';
 
 	/**
 	 * Instance
@@ -246,12 +246,14 @@ class Core {
 		$class = '';
 
 		// Включен ли предпросмотр для поста.
-		if ( ! $this->is_post_previewable( $post ) ) {
+		$is_previewable = $this->is_post_previewable( $post );
+
+		if ( ! $is_previewable ) {
 			$class = 'hidden';
 		}
 		?>
 		<div class="misc-pub-section">
-			<label title="Включить/выключить публичную сылку"><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', get_post_meta( $post->ID, self::META_NAME, true ) ); ?> /> <span>Публичная ссылка</span></label>
+			<label title="Включить/выключить публичную сылку"><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', $is_previewable ); ?> /> <span>Публичная ссылка</span></label>
 			<input type="text" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>" value="<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>" >
 		</div>
 		<?php
