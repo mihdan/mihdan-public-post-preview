@@ -142,7 +142,7 @@ class Core {
 	 * @param \WP_Post $post объект поста
 	 */
 	public function remove_preview( $new_status, $old_status, \WP_Post $post ) {
-		if ( 'publish' === $new_status && 'publish' !== $old_status ) {
+		if ( 'publish' === $new_status && 'publish' !== $old_status && in_array( $post->post_status, $this->post_status, true ) ) {
 			delete_post_meta( $post->ID, self::META_NAME );
 		}
 	}
