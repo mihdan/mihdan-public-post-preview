@@ -225,8 +225,8 @@ class Core {
 	 * Подклюаем стили и скрипты в админку
 	 */
 	public function enqueue_script() {
-		wp_enqueue_script( self::PLUGIN_NAME, plugins_url( 'assets/js/app.js', __FILE__ ), array( 'jquery' ), self::VERSION, true );
-		wp_enqueue_style( self::PLUGIN_NAME, plugins_url( 'assets/css/app.css', __FILE__ ), array(), self::VERSION );
+		wp_enqueue_script( self::PLUGIN_NAME, plugins_url( 'admin/assets/js/app.js', __FILE__ ), array( 'jquery' ), self::VERSION, true );
+		wp_enqueue_style( self::PLUGIN_NAME, plugins_url( 'admin/assets/css/app.css', __FILE__ ), array(), self::VERSION );
 	}
 
 	/**
