@@ -113,11 +113,9 @@ class Core {
 	public function fix_post_name( $post_id, \WP_Post $post, $update ) {
 
 		if (
-			$update &&
 			in_array( $post->post_status, $this->post_status, true ) &&
 			in_array( $post->post_type, $this->post_type, true ) &&
-			$this->is_post_previewable( $post ) &&
-			empty( $post->post_name ) ) {
+			$this->is_post_previewable( $post ) ) {
 
 			// Удалим хук, чтобы избежать залупливания.
 			remove_action( 'save_post', array( $this, 'fix_post_name' ) );
