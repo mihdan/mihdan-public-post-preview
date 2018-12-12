@@ -97,38 +97,24 @@ class Core {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
 		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
 		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
-		add_action( 'save_post', array( $this, 'fix_post_name' ), 10, 3 );
+		add_action( 'transition_post_status', array( $this, 'fix_post_name' ), 10, 3 );
 		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
 		add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 10, 2 );
 		add_filter( 'display_post_states', array( $this, 'draft_preview_post_states_mark' ), 10, 2 );
 	}
 
 	/**
-	 * Fires once a post has been saved.
+	 * Обновляем поле post_name у записи при изменении статуса
 	 *
-	 * @param int      $post_id Post ID.
-	 * @param \WP_Post $post    Post object.
-	 * @param bool     $update  Whether this is an existing post being updated or not.
+	 * @param          $new_status
+	 * @param          $old_status
+	 * @param \WP_Post $post
 	 */
-	public function fix_post_name( $post_id, \WP_Post $post, $update ) {
+	public function fix_post_name( $new_status, $old_status, \WP_Post $post ) {
+		global $wpdb;
 
-		if (
-			in_array( $post->post_status, $this->post_status, true ) &&
-			in_array( $post->post_type, $this->post_type, true ) &&
-			$this->is_post_previewable( $post ) ) {
-
-			// Удалим хук, чтобы избежать залупливания.
-			remove_action( 'save_post', array( $this, 'fix_post_name' ) );
-
-			// Важно для работы запроса предпросмотра задать post_name
-			$args = array(
-				'ID'         => $post_id,
-				'post_title' => $post->post_title,
-				'post_name'  => sanitize_title( $post->post_title ),
-			);
-
-			// Обновим пост
-			wp_update_post( wp_slash( $args ) );
+		if ( in_array( $new_status, $this->post_status, true ) && $this->is_post_previewable( $post ) ) {
+			$wpdb->update( $wpdb->posts, array( 'post_name' => sanitize_title( $post->post_title ) ), array( 'ID' => $post->ID ) );
 		}
 	}
 
