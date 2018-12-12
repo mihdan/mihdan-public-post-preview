@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9.3
+ * Version:     1.9.4
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.9.3';
+	const VERSION     = '1.9.4';
 
 	/**
 	 * Instance
@@ -97,9 +97,41 @@ class Core {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
 		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
 		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
+		add_action( 'save_post', array( $this, 'fix_post_name' ), 10, 3 );
 		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
 		add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 10, 2 );
 		add_filter( 'display_post_states', array( $this, 'draft_preview_post_states_mark' ), 10, 2 );
+	}
+
+	/**
+	 * Fires once a post has been saved.
+	 *
+	 * @param int      $post_id Post ID.
+	 * @param \WP_Post $post    Post object.
+	 * @param bool     $update  Whether this is an existing post being updated or not.
+	 */
+	public function fix_post_name( $post_id, \WP_Post $post, $update ) {
+
+		if (
+			$update &&
+			in_array( $post->post_status, $this->post_status, true ) &&
+			in_array( $post->post_type, $this->post_type, true ) &&
+			$this->is_post_previewable( $post ) &&
+			empty( $post->post_name ) ) {
+
+			// Удалим хук, чтобы избежать залупливания.
+			remove_action( 'save_post', array( $this, 'fix_post_name' ) );
+
+			// Важно для работы запроса предпросмотра задать post_name
+			$args = array(
+				'ID'         => $post_id,
+				'post_title' => $post->post_title,
+				'post_name'  => sanitize_title( $post->post_title ),
+			);
+
+			// Обновим пост
+			wp_update_post( wp_slash( $args ) );
+		}
 	}
 
 	/**
