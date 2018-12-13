@@ -1,3 +1,5 @@
+![Mihdan: Public Post Preview](./assets/banner-772x250.jpg)
+
 # Mihdan: Public Post Preview
 Позволяет просматривать посты по красивому URL у черновиков в WordPress
 
