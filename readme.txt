@@ -5,7 +5,7 @@ Donate link: https://www.kobzarev.com/donate/
 Requires at least: 4.9
 Tested up to: 5.0
 Requires PHP: 5.6
-Stable tag: 1.9.5
+Stable tag: 1.9.6
 
 Позволяет просматривать посты по красивому URL у черновиков в WordPress
 
@@ -29,3 +29,8 @@ Stable tag: 1.9.5
 
 1. Закачайте архив по пути `Плагины` -> `Добавить новый` в панели администрирования
 2. Щёлкните кнопку `Активировать`
+
+== Changelog ==
+
+= 1.9.6 (2019-10-22) =
+* Fixed bug with post name

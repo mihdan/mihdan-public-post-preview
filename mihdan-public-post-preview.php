@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9.5
+ * Version:     1.9.6
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.9.5';
+	const VERSION     = '1.9.6';
 
 	/**
 	 * Instance
@@ -85,17 +85,15 @@ class Core {
 		$this->init();
 	}
 
+	/**
+	 * Include requirements.
+	 */
 	public function includes() {
-		if ( file_exists( WP_PLUGIN_DIR . '/wp-php-console/vendor/autoload.php' ) ) {
-
-			require_once WP_PLUGIN_DIR . '/wp-php-console/vendor/autoload.php';
-
-			if ( ! class_exists( 'PC', false ) ) {
-				\PhpConsole\Helper::register();
-			}
-		}
 	}
 
+	/**
+	 * Setup plugin variables.
+	 */
 	public function setup() {
 		$this->post_status = apply_filters( 'mihdan_public_post_preview_post_status', array( 'draft' ) );
 		$this->post_type   = apply_filters( 'mihdan_public_post_preview_post_type', array( 'post' ) );
@@ -125,7 +123,7 @@ class Core {
 	public function fix_post_name( $post_ID, \WP_Post $post, $update ) {
 		global $wpdb;
 
-		if ( $this->is_post_previewable( $post ) ) {
+		if ( $this->is_post_previewable( $post ) && 'publish' !== $post->post_status ) {
 			$wpdb->update( $wpdb->posts, array( 'post_name' => sanitize_title( $post->post_title ) ), array( 'ID' => $post_ID ) );
 			clean_post_cache( $post_ID );
 		}
