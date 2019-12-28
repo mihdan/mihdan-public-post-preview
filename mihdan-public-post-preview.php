@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9.6
+ * Version:     1.9.7
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.9.6';
+	const VERSION     = '1.9.7';
 
 	/**
 	 * Instance
@@ -103,7 +103,8 @@ class Core {
 	 * Инициализация
 	 */
 	public function init() {
-		add_action( 'post_submitbox_misc_actions', array( $this, 'add_metabox' ) );
+		//add_action( 'post_submitbox_misc_actions', array( $this, 'add_meta_box' ) );
+		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
 		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
 		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
@@ -258,14 +259,34 @@ class Core {
 
 	/**
 	 * Добавляем чекбокс в метабокс с выбором статуса поста
+	 *
+	 * @param int      $post_type Тип записи.
+	 * @param \WP_Post $post Объект записи.
 	 */
-	public function add_metabox() {
-		global $post;
+	public function add_meta_box( $post_type, $post ) {
 
 		// Рисуем метабокс только для черновика
 		if ( ! in_array( $post->post_status, $this->post_status, true ) ) {
 			return;
 		}
+
+		// Добавляем метабокс.
+		add_meta_box(
+			self::PLUGIN_NAME . '_meta_box',
+			__( 'Public Post Preview', 'mihdan-public-post-preview' ),
+			[ $this, 'render_meta_box' ],
+			$this->post_type,
+			'side',
+			'high'
+		);
+	}
+
+	/**
+	 * Render meta box for posts.
+	 *
+	 * @param \WP_Post $post Post object.
+	 */
+	public function render_meta_box( $post ) {
 
 		// Классы для блока со ссылкой.
 		$class = '';
@@ -277,10 +298,10 @@ class Core {
 			$class = 'hidden';
 		}
 		?>
-		<div class="misc-pub-section">
-			<label title="Включить/выключить публичную сылку"><input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', $is_previewable ); ?> /> <span>Публичная ссылка</span></label>
-			<input type="text" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>" value="<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>" >
-		</div>
+		<label title="Включить/выключить публичную сылку">
+			<input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', $is_previewable ); ?> /> <span>Публичная ссылка</span>
+		</label>
+		<input type="text" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>" value="<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>" >
 		<?php
 	}
 

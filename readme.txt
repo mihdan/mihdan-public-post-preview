@@ -3,9 +3,9 @@ Contributors: mihdan, tkama
 Tags: public preview, custom post types, cpt, post, posts, preview, public
 Donate link: https://www.kobzarev.com/donate/
 Requires at least: 4.9
-Tested up to: 5.0
-Requires PHP: 5.6
-Stable tag: 1.9.6
+Tested up to: 5.3
+Requires PHP: 5.6.20
+Stable tag: 1.9.7
 
 Позволяет просматривать посты по красивому URL у черновиков в WordPress
 
@@ -32,5 +32,8 @@ Stable tag: 1.9.6
 
 == Changelog ==
 
-= 1.9.6 (2019-10-22) =
+= 1.9.7 (28.12.2019) =
+* Added Gutenberg support
+
+= 1.9.6 (22.10.2019) =
 * Fixed bug with post name
