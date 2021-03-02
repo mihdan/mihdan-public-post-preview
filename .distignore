@@ -2,6 +2,8 @@
 .distignore
 .editorconfig
 .git
+.github
+.wordpress-org
 .gitignore
 .gitlab-ci.yml
 .travis.yml
