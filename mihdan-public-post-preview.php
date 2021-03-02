@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9.7
+ * Version:     1.9.8
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.9.7';
+	const VERSION     = '1.9.8';
 
 	/**
 	 * Instance
@@ -170,7 +170,7 @@ class Core {
 	 * @param \WP_Post $post объект поста
 	 */
 	public function remove_preview( $new_status, $old_status, \WP_Post $post ) {
-		if ( 'publish' === $new_status && 'publish' !== $old_status && in_array( $post->post_status, $this->post_status, true ) ) {
+		if ( 'publish' === $new_status && 'publish' !== $old_status ) {
 			delete_post_meta( $post->ID, self::META_NAME );
 		}
 	}

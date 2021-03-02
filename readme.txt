@@ -3,9 +3,9 @@ Contributors: mihdan, tkama
 Tags: public preview, custom post types, cpt, post, posts, preview, public
 Donate link: https://www.kobzarev.com/donate/
 Requires at least: 4.9
-Tested up to: 5.3
+Tested up to: 5.6
 Requires PHP: 5.6.20
-Stable tag: 1.9.7
+Stable tag: 1.9.8
 
 Позволяет просматривать посты по красивому URL у черновиков в WordPress
 
@@ -31,6 +31,10 @@ Stable tag: 1.9.7
 2. Щёлкните кнопку `Активировать`
 
 == Changelog ==
+
+= 1.9.8 (02.03.2021) =
+* Added auto deploy config for Github Actions
+* Fixed tons of bugs
 
 = 1.9.7 (28.12.2019) =
 * Added Gutenberg support
