@@ -327,6 +327,9 @@ class Core {
 			wp_update_post( wp_slash( $args ) );
 
 		} else {
+			// Удалим мету
+			delete_post_meta( $post_id, self::META_NAME );
+
 			// Удалим post_name у записи. Важно!!!
 			$args = array(
 				'ID'        => $post->ID,
@@ -334,9 +337,6 @@ class Core {
 			);
 
 			wp_update_post( $args );
-
-			// Удалим мету
-			delete_post_meta( $post_id, self::META_NAME );
 		}
 
 		// Формируем ответ для JS
