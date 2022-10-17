@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9.9
+ * Version:     1.9.10
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -27,7 +27,7 @@ class Core {
 
 	const PLUGIN_NAME = 'mppp';
 	const META_NAME   = 'mppp';
-	const VERSION     = '1.9.9';
+	const VERSION     = '1.9.10';
 
 	/**
 	 * Instance
@@ -297,6 +297,10 @@ class Core {
 		if ( ! $is_previewable ) {
 			$class = 'hidden';
 		}
+		wp_nonce_field(
+            'toggle_preview_for_post_' . $post->ID,
+            esc_attr( self::PLUGIN_NAME ) . '_nonce'
+        );
 		?>
 		<label title="Включить/выключить публичную сылку">
 			<input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', $is_previewable ); ?> /> <span>Публичная ссылка</span>
@@ -312,6 +316,16 @@ class Core {
 		$value   = ( 'true' === $_REQUEST['value'] ) ? 1 : 0;
 		$post_id = absint( $_REQUEST['post_id'] );
 		$post    = get_post( $post_id );
+
+        // Добавляем проверку прав. Минимальная роль Участник (Contributor).
+        if ( ! current_user_can( 'delete_posts' ) ) {
+	        wp_send_json_error( 'У этого пользователя нет прав менять видимость черновиков' );
+        }
+
+        // Добавляем защиту от CSRF.
+		if ( ! check_ajax_referer( 'toggle_preview_for_post_' . $post_id, 'nonce', false ) ) {
+            wp_send_json_error( 'Передан невалидный ключ nonce' );
+		}
 
 		// Обновляем мету с галочкой
 		if ( 1 === $value ) {
