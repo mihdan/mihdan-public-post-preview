@@ -1,0 +1,355 @@
+<?php
+/**
+ * @package mihdan-public-post-preview
+ */
+
+namespace Mihdan\PublicPostPreview;
+
+use WP_Post;
+use WP_Query;
+
+class Core {
+
+	const PLUGIN_NAME = 'mppp';
+	const META_NAME = 'mppp';
+
+	/**
+	 * Instance
+	 *
+	 * @since  1.0
+	 *
+	 * @access private
+	 * @static
+	 *
+	 * @var Core The single instance of the class.
+	 */
+	private static $_instance = null;
+
+	/**
+	 * @var array $post_type массив типов поста
+	 */
+	private $post_type;
+
+	/**
+	 * @var array $post_status массив статусов поста
+	 */
+	private $post_status;
+
+	/**
+	 * Instance
+	 *
+	 * Ensures only one instance of the class is loaded or can be loaded.
+	 *
+	 * @return Core An instance of the class.
+	 * @since  1.0
+	 *
+	 * @access public
+	 * @static
+	 *
+	 */
+	public static function get_instance() {
+
+		if ( is_null( self::$_instance ) ) {
+			self::$_instance = new self();
+		}
+
+		return self::$_instance;
+
+	}
+
+	/**
+	 * Constructor
+	 *
+	 * @since  1.0
+	 *
+	 * @access public
+	 */
+	public function __construct() {
+		$this->includes();
+		$this->setup();
+		$this->init();
+	}
+
+	/**
+	 * Include requirements.
+	 */
+	public function includes() {
+	}
+
+	/**
+	 * Setup plugin variables.
+	 */
+	public function setup() {
+		$this->post_status = apply_filters( 'mihdan_public_post_preview_post_status', array( 'draft' ) );
+		$this->post_type   = apply_filters( 'mihdan_public_post_preview_post_type', array( 'post' ) );
+	}
+
+	/**
+	 * Инициализация
+	 */
+	public function init() {
+		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ), 10, 2 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_script' ) );
+		add_action( 'wp_ajax_mppp_toggle', array( $this, 'mppp_toggle' ) );
+		add_action( 'transition_post_status', array( $this, 'remove_preview' ), 10, 3 );
+		add_action( 'wp_insert_post', array( $this, 'fix_post_name' ), 999, 3 );
+		add_filter( 'posts_results', array( $this, 'posts_results' ), 10, 2 );
+		add_filter( 'preview_post_link', array( $this, 'preview_post_link' ), 10, 2 );
+		add_filter( 'display_post_states', array( $this, 'draft_preview_post_states_mark' ), 10, 2 );
+	}
+
+	/**
+	 * Обновляем поле post_name у записи при изменении статуса
+	 *
+	 * @param         $post_ID
+	 * @param WP_Post $post
+	 * @param         $update
+	 */
+	public function fix_post_name( $post_ID, WP_Post $post, $update ) {
+		global $wpdb;
+
+		if ( $this->is_post_previewable( $post ) && 'publish' !== $post->post_status ) {
+			$wpdb->update( $wpdb->posts, array( 'post_name' => sanitize_title( $post->post_title ) ), array( 'ID' => $post_ID ) );
+			clean_post_cache( $post_ID );
+		}
+	}
+
+	/**
+	 * Добавляем метку к посту в списке записей, что для него активно превью
+	 *
+	 * @param array   $states массив статусов.
+	 * @param WP_Post $post   объект поста.
+	 *
+	 * @return array
+	 */
+	public function draft_preview_post_states_mark( $states, WP_Post $post ) {
+		if ( $this->is_post_previewable( $post ) ) {
+			$states[] = 'Публичное превью';
+		}
+
+		return $states;
+	}
+
+	/**
+	 * Генерим красивую ссылку у записи в списке постов в админке.
+	 *
+	 * @param string  $preview_link дефолтная ссылка.
+	 * @param WP_Post $post
+	 *
+	 * @return string
+	 */
+	public function preview_post_link( $preview_link, WP_Post $post ) {
+		if ( $this->is_post_previewable( $post ) ) {
+			return $this->get_permalink( $post->ID );
+		}
+
+		return $preview_link;
+	}
+
+	/**
+	 * Удалить галочку из базы при публикации поста
+	 *
+	 * @param string  $new_status старый статус
+	 * @param string  $old_status новый статус
+	 * @param WP_Post $post       объект поста
+	 */
+	public function remove_preview( $new_status, $old_status, WP_Post $post ) {
+		if ( 'publish' === $new_status && 'publish' !== $old_status ) {
+			delete_post_meta( $post->ID, self::META_NAME );
+		}
+	}
+
+	/**
+	 * Превьюбельный ли пост ))))
+	 *
+	 * @param WP_Post $post объект поста
+	 *
+	 * @return boolean
+	 */
+	public function is_post_previewable( WP_Post $post ) {
+
+		// Получаем мету из базы.
+		$result = get_post_meta( $post->ID, self::META_NAME, true );
+
+		// Фильтруем
+		return apply_filters( 'mihdan_public_post_preview_is_post_previewable', $result, $post );
+	}
+
+	/**
+	 * Получить красивую ссылку на пост
+	 *
+	 * @param int $post_id идентификатор записи
+	 *
+	 * @return string
+	 */
+	public function get_permalink( $post_id ) {
+
+		if ( ! function_exists( 'get_sample_permalink' ) ) {
+			require_once ABSPATH . '/wp-admin/includes/post.php';
+		}
+
+		list( $permalink, $postname ) = get_sample_permalink( $post_id );
+
+		return str_replace( array( '%pagename%', '%postname%' ), $postname, $permalink );
+	}
+
+	/**
+	 * Создаем фейковое свойство для `$wp_query->_draft_posts`
+	 * и передаем туда пост-черновик, у которого
+	 * в базе проставлена соответствующая галочка
+	 *
+	 * @param array    $posts массив записей
+	 * @param WP_Query $wp_query
+	 *
+	 * @return mixed
+	 */
+	public function posts_results( $posts, WP_Query $wp_query ) {
+
+		if ( ! $wp_query->is_admin && $wp_query->is_main_query() && $wp_query->is_single() && 1 === count( $posts ) ) {
+
+			/** @var WP_Post $post */
+			$post = &$posts[0];
+
+			if ( in_array( $post->post_type, $this->post_type, true ) && in_array( $post->post_status, $this->post_status, true ) && $this->is_post_previewable( $post ) ) {
+				// Запомним статус
+				$old_status = $post->post_status;
+
+				// Чтобы работало is_preview
+				$wp_query->is_preview = true;
+
+				// Чтобы пройти проверки
+				$post->post_status = 'publish';
+
+				add_action( 'wp', function () use ( $post, $old_status ) {
+					$post->post_status = $old_status;
+				} );
+			}
+		}
+
+		return $posts;
+	}
+
+	/**
+	 * Подклюаем стили и скрипты в админку
+	 */
+	public function enqueue_script() {
+		wp_enqueue_script(
+			self::PLUGIN_NAME,
+			plugins_url( 'admin/assets/js/app.js', MIHDAN_PUBLIC_POST_PREVIEW_FILE ),
+			array( 'jquery' ),
+			MIHDAN_PUBLIC_POST_PREVIEW_VERSION,
+			true
+		);
+		wp_enqueue_style(
+			self::PLUGIN_NAME,
+			plugins_url( 'admin/assets/css/app.css', MIHDAN_PUBLIC_POST_PREVIEW_FILE ),
+			array(),
+			MIHDAN_PUBLIC_POST_PREVIEW_VERSION
+		);
+	}
+
+	/**
+	 * Добавляем чекбокс в метабокс с выбором статуса поста
+	 *
+	 * @param int     $post_type Тип записи.
+	 * @param WP_Post $post      Объект записи.
+	 */
+	public function add_meta_box( $post_type, $post ) {
+
+		// Рисуем метабокс только для черновика
+		if ( ! in_array( $post->post_status, $this->post_status, true ) ) {
+			return;
+		}
+
+		// Добавляем метабокс.
+		add_meta_box(
+			self::PLUGIN_NAME . '_meta_box',
+			__( 'Public Post Preview', 'mihdan-public-post-preview' ),
+			[ $this, 'render_meta_box' ],
+			$this->post_type,
+			'side',
+			'high'
+		);
+	}
+
+	/**
+	 * Render meta box for posts.
+	 *
+	 * @param WP_Post $post Post object.
+	 */
+	public function render_meta_box( $post ) {
+
+		// Классы для блока со ссылкой.
+		$class = '';
+
+		// Включен ли предпросмотр для поста.
+		$is_previewable = $this->is_post_previewable( $post );
+
+		if ( ! $is_previewable ) {
+			$class = 'hidden';
+		}
+		wp_nonce_field(
+			'toggle_preview_for_post_' . $post->ID,
+			esc_attr( self::PLUGIN_NAME ) . '_nonce'
+		);
+		?>
+		<label title="Включить/выключить публичную сылку">
+			<input type="checkbox" data-post-id="<?php echo absint( $post->ID ); ?>" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_toggler" <?php checked( '1', $is_previewable ); ?> /> <span>Публичная ссылка</span>
+		</label>
+		<input type="text" id="<?php echo esc_attr( self::PLUGIN_NAME ); ?>_link" class="<?php echo esc_attr( $class ); ?>" value="<?php echo esc_url( $this->get_permalink( $post->id ) ); ?>">
+		<?php
+	}
+
+	/**
+	 * Включаем/Выключаем превью для записи
+	 */
+	public function mppp_toggle() {
+		$value   = ( 'true' === $_REQUEST['value'] ) ? 1 : 0;
+		$post_id = absint( $_REQUEST['post_id'] );
+		$post    = get_post( $post_id );
+
+		// Добавляем проверку прав. Минимальная роль Участник (Contributor).
+		if ( ! current_user_can( 'delete_posts' ) ) {
+			wp_send_json_error( 'У этого пользователя нет прав менять видимость черновиков' );
+		}
+
+		// Добавляем защиту от CSRF.
+		if ( ! check_ajax_referer( 'toggle_preview_for_post_' . $post_id, 'nonce', false ) ) {
+			wp_send_json_error( 'Передан невалидный ключ nonce' );
+		}
+
+		// Обновляем мету с галочкой
+		if ( 1 === $value ) {
+			// Важно для работы запроса предпросмотра задать post_name
+			$args = array(
+				'ID'         => $post->ID,
+				'post_title' => $post->post_title,
+				'post_name'  => sanitize_title( $post->post_title ),
+				'meta_input' => [ self::META_NAME => $value ],
+			);
+
+			// Обновим пост
+			wp_update_post( wp_slash( $args ) );
+
+		} else {
+			// Удалим мету
+			delete_post_meta( $post_id, self::META_NAME );
+
+			// Удалим post_name у записи. Важно!!!
+			$args = array(
+				'ID'        => $post->ID,
+				'post_name' => '',
+			);
+
+			wp_update_post( $args );
+		}
+
+		// Формируем ответ для JS
+		$result = array(
+			'value' => $value,
+			'link'  => $this->get_permalink( $post_id ),
+		);
+
+		wp_send_json_success( $result );
+	}
+}
