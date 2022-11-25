@@ -3,9 +3,9 @@ Contributors: mihdan, tkama
 Tags: public preview, custom post types, cpt, post, posts, preview, public
 Donate link: https://www.kobzarev.com/donate/
 Requires at least: 4.9
-Tested up to: 6.0
+Tested up to: 6.1
 Requires PHP: 5.6.20
-Stable tag: 1.9.11
+Stable tag: 1.9.12
 
 Позволяет просматривать посты по красивому URL у черновиков в WordPress
 
@@ -31,6 +31,9 @@ Stable tag: 1.9.11
 2. Щёлкните кнопку `Активировать`
 
 == Changelog ==
+
+= 1.9.12 (25.11.2022) =
+* Fixed fatal errors
 
 = 1.9.11 (17.10.2022) =
 * Fixes WPCS errors
