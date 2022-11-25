@@ -3,7 +3,7 @@
  * Plugin Name: Mihdan: Public Post Preview
  * Description: Публичная ссылка на пост до его публикации
  * Plugin URI:  https://github.com/mihdan/mihdan-public-post-preview/
- * Version:     1.9.12
+ * Version:     1.9.12.1
  * Author:      Mikhail Kobzarev
  * Author URI:  https://www.kobzarev.com/
  * Text Domain: mihdan-public-post-preview
@@ -26,9 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MIHDAN_PUBLIC_POST_PREVIEW_FILE', __FILE__ );
 define( 'MIHDAN_PUBLIC_POST_PREVIEW_DIR', __DIR__ );
-define( 'MIHDAN_PUBLIC_POST_PREVIEW_VERSION', '1.9.12' );
+define( 'MIHDAN_PUBLIC_POST_PREVIEW_VERSION', '1.9.12.1' );
 
-if ( __DIR__ . '/src/Core.php' ) {
+if ( file_exists( __DIR__ . '/src/Core.php' ) ) {
 	require_once __DIR__ . '/src/Core.php';
 
 	/**

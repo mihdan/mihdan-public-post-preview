@@ -5,7 +5,7 @@ Donate link: https://www.kobzarev.com/donate/
 Requires at least: 4.9
 Tested up to: 6.1
 Requires PHP: 5.6.20
-Stable tag: 1.9.12
+Stable tag: 1.9.12.1
 
 Позволяет просматривать посты по красивому URL у черновиков в WordPress
 
